@@ -1,3 +1,5 @@
+#define CL_TARGET_OPENCL_VERSION 300 // Deklarasi eksplisit menggunakan OpenCL 3.0
+
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -29,7 +31,9 @@ int main() {
     clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 1, &device, NULL);
 
     cl_context context = clCreateContext(NULL, 1, &device, NULL, NULL, NULL);
-    cl_command_queue queue = clCreateCommandQueue(context, device, 0, NULL);
+    
+    // [UPDATE] Menggunakan fungsi Queue terbaru agar tidak muncul warning "deprecated"
+    cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, NULL, NULL);
 
     // 3. Membaca file kernel.cl
     ifstream kernelFile("src/kernel.cl");
@@ -42,7 +46,6 @@ int main() {
     cl_kernel kernel = clCreateKernel(program, "matrix_multiply", NULL);
 
     // 4. Alokasi Memori di VRAM GPU (Device Memory) & Transfer Data
-    // Tahap ini sering menjadi "Memory Bottleneck" yang menyebabkan speedup tidak linier
     cl_mem d_A = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, bytes, h_A.data(), NULL);
     cl_mem d_B = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, bytes, h_B.data(), NULL);
     cl_mem d_C = clCreateBuffer(context, CL_MEM_WRITE_ONLY, bytes, NULL, NULL);
@@ -53,27 +56,25 @@ int main() {
     clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_C);
     clSetKernelArg(kernel, 3, sizeof(int), &N);
 
-    // 6. Eksekusi Kernel secara Paralel (Mulai menghitung waktu komputasi)
+    // 6. Eksekusi Kernel secara Paralel
     size_t globalSize[2] = {(size_t)N, (size_t)N};
     
-    cout << "--- Matrix Multiplication " << N << "x" << N << " (OpenCL) ---" << endl;
+    cout << "--- Matrix Multiplication " << N << "x" << N << " (OpenCL 3.0) ---" << endl;
     
     auto start_time = chrono::high_resolution_clock::now();
     
-    // Memerintahkan GPU untuk memproses data dalam workgroup
     clEnqueueNDRangeKernel(queue, kernel, 2, NULL, globalSize, NULL, 0, NULL, NULL);
-    clFinish(queue); // Tunggu sampai seluruh core GPU selesai bekerja
+    clFinish(queue); 
     
-    // 7. Transfer kembali hasil (Matriks C) dari GPU ke RAM CPU
+    // 7. Transfer kembali hasil dari GPU ke RAM CPU
     clEnqueueReadBuffer(queue, d_C, CL_TRUE, 0, bytes, h_C.data(), 0, NULL, NULL);
     
     auto end_time = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed = end_time - start_time;
 
-    // Output diset rapi tanpa karakter aneh
     cout << "[OK] OpenCL Time     : " << elapsed.count() << " seconds" << endl;
 
-    // 8. Bersihkan memori (Sangat penting di C++)
+    // 8. Bersihkan memori
     clReleaseMemObject(d_A);
     clReleaseMemObject(d_B);
     clReleaseMemObject(d_C);

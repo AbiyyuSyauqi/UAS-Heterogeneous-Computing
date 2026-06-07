@@ -1,1 +1,6 @@
+--- Matrix Multiplication 1024x1024 (OpenCL 3.0) ---
+[OK] OpenCL Time     : 0.127163 seconds
 
+--- Matrix Multiplication 1024x1024 ---
+[OK] Sequential Time : 63.015 seconds
+[OK] OpenMP Time     : 26.662 seconds
