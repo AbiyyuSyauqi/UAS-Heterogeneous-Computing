@@ -34,4 +34,4 @@ Pastikan *compiler* GCC (`g++`) dan *driver* OpenCL sudah terinstal.
 *(Catatan: Output terminal dibuat menggunakan karakter standar ASCII untuk menghindari isu encoding karakter yang corrupt pada console).*
 
 ## 🎥 Link Video Penjelasan Proyek
-[Masukkan Link YouTube Kalian di Sini]
+https://youtu.be/mlt8fSr31xg
